@@ -6,7 +6,7 @@ A daily inventory check helps a job board editor find stale vacancies before the
 
 ## First check
 
-Choose **Free static example** to inspect the output. For a live check, select **Check my listings** and paste CSV with the columns listingId and applyUrl. Use direct employer posting links from job-boards.greenhouse.io, boards.greenhouse.io, or jobs.ashbyhq.com. Start with one real posting and set a $0.002 run maximum. The fee is $0.002 for each unique verified open or confirmed closed posting. Unknowns and duplicates have zero result fee. Each batch supports up to 1,000 rows from 50 boards.
+Open the [three-row sample CSV](sample-review.csv) to inspect the output without an account or a run. You can also choose **Free static example** in Apify. For a live check, select **Check my listings** and paste CSV with the columns listingId and applyUrl. Use direct employer posting links from job-boards.greenhouse.io, boards.greenhouse.io, or jobs.ashbyhq.com. Start with one real posting and set a $0.002 run maximum. The fee is $0.002 for each unique verified open or confirmed closed posting. Unknowns and duplicates have zero result fee. Each batch supports up to 1,000 rows from 50 boards.
 
 | Result | Next step for the editor |
 | --- | --- |
@@ -25,7 +25,7 @@ A job that was already missing at first import stays unknown until the checker h
 
 ## Use with an AI assistant
 
-Connect Apify's MCP server to your assistant. Ask it to look up **changeable_peddler/expired-job-apply-link-checker** and inspect the schema and pricing. Example request: “Check these two employer job URLs for my review sheet. Keep my listing IDs. Spend up to $0.004 and show me anything I should review.” Supply the two real posting URLs. The tool call below illustrates the input with placeholders for your listings.
+Connect [Apify's MCP tools](https://mcp.apify.com/?tools=search-actors,fetch-actor-details,call-actor,get-actor-run,get-dataset-items) to your assistant. Ask it to look up **changeable_peddler/expired-job-apply-link-checker** and inspect the schema and pricing. Example request: “Check these two employer job URLs for my review sheet. Keep my listing IDs. Spend up to $0.004 and show me anything I should review.” Supply the two real posting URLs. The tool call below illustrates the input with placeholders for your listings.
 
 ```json
 {

@@ -1,0 +1,4 @@
+listingId,status,reason,action,example,billable
+EXAMPLE-1,open,present_on_board,keep,true,false
+EXAMPLE-2,unknown,awaiting_second_observation,review,true,false
+EXAMPLE-3,closed,absent_on_two_complete_boards,review_for_removal,true,false
