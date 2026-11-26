@@ -1,0 +1,254 @@
+{
+  "name": "Daily job link review for Greenhouse and Ashby",
+  "active": false,
+  "nodes": [
+    {
+      "name": "Manual test",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "id": "ac50f41b-61a0-4a4c-a787-c5455e8eb5f9",
+      "position": [
+        0,
+        130
+      ]
+    },
+    {
+      "name": "Daily inventory review",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "fc3af0a5-3d5d-4e23-97dc-478c9aa510c2",
+      "position": [
+        0,
+        370
+      ]
+    },
+    {
+      "name": "Read Inventory",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_YOUR_SPREADSHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Inventory"
+        },
+        "options": {}
+      },
+      "id": "139a3fbf-23fe-47fc-afb0-87e253e09356",
+      "position": [
+        230,
+        240
+      ]
+    },
+    {
+      "name": "Prepare capped batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows = $input.all().map(item => item.json);\nif (!rows.length || rows.length > 1000) throw Error('Use 1\u20131,000 inventory rows.');\nconst listings = rows.map(row => {\n  const listingId = String(row.listingId ?? '').trim();\n  const applyUrl = String(row.applyUrl ?? '').trim();\n  if (!listingId || !applyUrl) throw Error('Each inventory row needs listingId and applyUrl.');\n  return { listingId, applyUrl };\n});\nreturn [{json:{listings, maxUsd: (listings.length * 0.002).toFixed(3)}}];"
+      },
+      "id": "b1ea54b6-f1ff-4f62-8156-33c7bd5003a6",
+      "position": [
+        460,
+        240
+      ]
+    },
+    {
+      "name": "Check job links",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/actors/changeable_peddler~expired-job-apply-link-checker/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "maxTotalChargeUsd",
+              "value": "={{ $json.maxUsd }}"
+            },
+            {
+              "name": "timeout",
+              "value": "300"
+            },
+            {
+              "name": "restartOnError",
+              "value": "false"
+            },
+            {
+              "name": "clean",
+              "value": "true"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "1000"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({mode:\"live\",listings:$json.listings}) }}",
+        "options": {
+          "timeout": 310000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json",
+              "neverError": false
+            }
+          }
+        }
+      },
+      "id": "f6a327a6-cfcc-42ee-b34f-8692aa2839d3",
+      "position": [
+        690,
+        240
+      ],
+      "retryOnFail": false
+    },
+    {
+      "name": "Prepare review rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const response = $input.first().json;\nif (response.statusCode !== 200 && response.statusCode !== 201) throw Error('Inspect the original Apify run.');\nif (!Array.isArray(response.body) || !response.body.length) throw Error('No review rows returned.');\nconst expected = $('Prepare capped batch').first().json.listings;\nif (response.body.length !== expected.length) throw Error('Incomplete output. Inspect the existing run.');\nreturn response.body.flatMap((r,i) => {\n  if (r.listingId !== expected[i].listingId || !['open','unknown','closed'].includes(r.status)) throw Error('Unexpected output.');\n  if (r.replay === true) return [];\n  const fields = ['listingId','applyUrl','checkedAt','status','lastConfirmed','action','reason'];\n  const json = Object.fromEntries(fields.map(key => [key, String(r[key] ?? '')]));\n  return [{json}];\n});"
+      },
+      "id": "ba113b5b-6721-4453-b80b-0d07473f0940",
+      "position": [
+        920,
+        240
+      ]
+    },
+    {
+      "name": "Append Review",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_YOUR_SPREADSHEET"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Review"
+        },
+        "options": {
+          "cellFormat": "RAW"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": []
+        }
+      },
+      "id": "59bffd45-9162-4205-83ab-17e4afeb7ed0",
+      "position": [
+        1150,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Manual test": {
+      "main": [
+        [
+          {
+            "node": "Read Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily inventory review": {
+      "main": [
+        [
+          {
+            "node": "Read Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Inventory": {
+      "main": [
+        [
+          {
+            "node": "Prepare capped batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare capped batch": {
+      "main": [
+        [
+          {
+            "node": "Check job links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check job links": {
+      "main": [
+        [
+          {
+            "node": "Prepare review rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare review rows": {
+      "main": [
+        [
+          {
+            "node": "Append Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
