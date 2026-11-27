@@ -25,7 +25,21 @@ A job that was already missing at first import stays unknown until the checker h
 
 ## Use with an AI assistant
 
-Connect [Apify's MCP tools](https://mcp.apify.com/?tools=search-actors,fetch-actor-details,call-actor,get-actor-run,get-dataset-items) to your assistant. Ask it to look up **changeable_peddler/expired-job-apply-link-checker** and inspect the schema and pricing. Example request: “Check these two employer job URLs for my review sheet. Keep my listing IDs. Spend up to $0.004 and show me anything I should review.” Supply the two real posting URLs. The tool call below illustrates the input with placeholders for your listings.
+**Preview without an Apify account.** Add this URL as a remote MCP server in your assistant.
+
+```text
+https://mcp.apify.com/?tools=search-actors,fetch-actor-details&telemetry-enabled=false
+```
+
+Ask your assistant, “Use `fetch-actor-details` for `changeable_peddler/expired-job-apply-link-checker`. Show me which job boards it covers, what counts as a confirmed closure and the price for two links.” This connection can search the catalog and read product details. You can also open the [sample review CSV](sample-review.csv) to see what an editor receives.
+
+**Run a check with a spending cap.** When you're ready, connect your assistant to the following server URL and sign in to your own Apify account when prompted.
+
+```text
+https://mcp.apify.com/?tools=search-actors,fetch-actor-details,call-actor,get-actor-run,get-dataset-items
+```
+
+Supply two real employer posting URLs and their listing IDs. Ask your assistant, “Use `changeable_peddler/expired-job-apply-link-checker` to check these two job postings for my review sheet. Keep my listing IDs, cap the run at $0.004, and show me anything I should review.” The corresponding `call-actor` arguments are shown below with placeholder URLs.
 
 ```json
 {
